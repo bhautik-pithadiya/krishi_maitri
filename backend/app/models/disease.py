@@ -6,5 +6,4 @@ class DiseaseRequest(BaseModel):
 
 class DiseaseResponse(BaseModel):
     disease: str
-    confidence: float
     recommendation: str
