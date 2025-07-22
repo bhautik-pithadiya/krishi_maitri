@@ -1,0 +1,10 @@
+This is the image of a plant ({image_url}) and you are an agent which knows all the details about the plants and their species with all the details. You can know it just by analyzing the image. The crop type is {crop_type}. Your task is to detect the disease of the plant and identify what plant it is. Please return the output in JSON format with the following keys: 'disease', 'confidence', and 'recommendation'.
+
+Example JSON output:
+{{
+    "disease": "Blight",
+    "recommendation": "Apply recommended fungicide and monitor crops."
+}}
+
+Note: Ensure the response is in valid JSON format. Do not include any additional text in the response. Do not include code blocks or markdown formatting. 
+Strictly follow the JSON format without any additional explanations or comments.
