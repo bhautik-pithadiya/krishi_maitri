@@ -1,7 +1,6 @@
 import httpx
 import os
 from dotenv import load_dotenv
-from app.services.knowledge_agent import KnowledgeAgent
 from app.utils.prompt_manager import render_prompt
 from app.services.gemini_client import call_gemini
 
@@ -10,7 +9,6 @@ load_dotenv()
 DATA_GOV_IN_API_KEY = os.getenv("DATA_GOV_IN_API_KEY")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-knowledge_agent = KnowledgeAgent()
 # In a real app, you would have a robust system to ingest and update documents.
 # For now, we will leave it empty. A user could trigger ingestion via an endpoint.
 # knowledge_agent.ingest_documents(urls=["https://agriwelfare.gov.in/en/MajorSchemes"])
@@ -18,7 +16,7 @@ knowledge_agent = KnowledgeAgent()
 
 async def get_weather_data(lat: float, lon: float):
     """Fetches weather data from OpenWeatherMap."""
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OPENWEATHER_API_KEY}&units=metric"
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={OPENWEATHER_API_KEY}&units=metric"
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(url)
@@ -60,9 +58,6 @@ async def get_advisory(query: str, lat: float, lon: float, state: str, district:
     # 1. Fetch data from all sources concurrently
     weather_data = await get_weather_data(lat, lon)
     market_data = await get_market_data(state, district, market, commodity)
-    
-    # 2. Search for relevant government schemes using the KnowledgeAgent
-    scheme_data = knowledge_agent.search(query)
 
     # 3. Render the prompt with all the fetched data
     prompt = render_prompt(
@@ -70,7 +65,6 @@ async def get_advisory(query: str, lat: float, lon: float, state: str, district:
         query=query,
         weather_data=str(weather_data),
         market_data=str(market_data),
-        scheme_data=scheme_data,
     )
 
     # 4. Call Gemini to get the final advisory response
