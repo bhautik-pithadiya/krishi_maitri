@@ -1,10 +1,14 @@
+
 from pydantic import BaseModel
+from typing import Optional
 
 class WeatherRequest(BaseModel):
-    location: str
-    date: str
+    lat: float
+    lon: float
+    location: Optional[str] = None 
 
 class WeatherResponse(BaseModel):
     location: str
     forecast: str
-    temperature: float
+    temperature_celsius: float
+    details: dict

@@ -5,14 +5,18 @@ from app.services.stt_client import speech_to_text
 
 async def route_request(task_type: str, payload: dict):
     if task_type == "disease_diagnosis":
-        # Call disease_agent logic
-        return await process_gemini_request(payload)
+        # This should call the predict_disease logic, which uses Gemini
+        # This is a simplified example. In reality, you'd call the endpoint or refactor the logic.
+        from app.api.v1.endpoints.disease_agent import predict_disease_logic
+        return predict_disease_logic(payload)
     elif task_type == "generate_voice":
-        return await generate_tts(payload)
+        text = payload.get("text", "")
+        return await text_to_speech(text)
     elif task_type == "transcribe_audio":
-        return await transcribe_audio(payload)
-    elif task_type == "finance_summary":
-        # You can build out the call to finance_agent
-        pass
+        audio_bytes = payload.get("audio", b"")
+        return await speech_to_text(audio_bytes)
+    elif task_type == "advisory":
+        from app.services.advisory_agent import get_advisory
+        return await get_advisory(**payload)
     else:
         raise ValueError(f"Unsupported task_type: {task_type}")
