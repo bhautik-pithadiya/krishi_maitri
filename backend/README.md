@@ -23,3 +23,11 @@
 - `app/` - Main backend application code
 - `tests/` - Test cases
 - `scripts/` - Utility scripts
+
+## Speech-to-Text
+
+The backend integrates with **Google Cloud Speech-to-Text**. Set the
+`GOOGLE_APPLICATION_CREDENTIALS` environment variable to your service account
+JSON file before running the app. A WebSocket endpoint is available at
+`/api/v1/stt/ws/stt` for streaming recognition, and `/api/v1/stt/transcribe` can
+be used to transcribe uploaded audio files.
