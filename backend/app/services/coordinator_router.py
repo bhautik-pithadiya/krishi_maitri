@@ -16,7 +16,7 @@ async def route_request(task_type: str, payload: dict):
         audio_bytes = payload.get("audio", b"")
         return await speech_to_text(audio_bytes)
     elif task_type == "advisory":
-        from app.services.advisory_agent import get_advisory
-        return await get_advisory(**payload)
+        from app.services.coordinator_service import get_holistic_advisory
+        return await get_holistic_advisory(**payload)
     else:
         raise ValueError(f"Unsupported task_type: {task_type}")
