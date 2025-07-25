@@ -35,5 +35,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
-tests/audio/
-tests/images/
+backend/tests/audio/
+backend/tests/images/
