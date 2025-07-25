@@ -1,6 +1,6 @@
 from app.services.gemini_client import call_gemini
 from app.services.tts_client import text_to_speech
-from app.services.stt_client import speech_to_text
+# from app.services.stt_client import speech_to_text
 # Import other agents as needed
 
 async def route_request(task_type: str, payload: dict):
@@ -12,9 +12,9 @@ async def route_request(task_type: str, payload: dict):
     elif task_type == "generate_voice":
         text = payload.get("text", "")
         return await text_to_speech(text)
-    elif task_type == "transcribe_audio":
-        audio_bytes = payload.get("audio", b"")
-        return await speech_to_text(audio_bytes)
+    # elif task_type == "transcribe_audio":
+    #     audio_bytes = payload.get("audio", b"")
+    #     return await speech_to_text(audio_bytes)
     elif task_type == "advisory":
         from app.services.advisory_agent import get_advisory
         return await get_advisory(**payload)

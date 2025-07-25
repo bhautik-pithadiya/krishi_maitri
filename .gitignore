@@ -31,3 +31,9 @@ Thumbs.db
 
 # credentials
 *.json
+
+# Temporary files
+*.tmp
+*.bak
+tests/audio/
+tests/images/
