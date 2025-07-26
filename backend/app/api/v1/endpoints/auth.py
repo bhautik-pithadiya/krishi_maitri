@@ -3,10 +3,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models.auth import (
     UserSignUpRequest, 
     UserLoginRequest, 
+    UserRegistrationRequest,
     AuthResponse, 
+    ExtendedAuthResponse,
     TokenVerificationRequest, 
     TokenResponse,
-    UserResponse
+    UserResponse,
+    ExtendedUserResponse
 )
 from app.services.firebase_auth_service import firebase_auth_service
 from typing import Optional
@@ -40,6 +43,51 @@ async def signup(request: UserSignUpRequest):
         access_token = firebase_auth_service.create_custom_token(user.uid)
         
         return AuthResponse(
+            user=user,
+            access_token=access_token,
+            token_type="bearer",
+            expires_in=3600  # 1 hour
+        )
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(e)}"
+        )
+
+@router.post("/register", response_model=ExtendedAuthResponse, status_code=status.HTTP_201_CREATED)
+async def register_user(request: UserRegistrationRequest):
+    """
+    Register a new user with complete profile including farm details
+    """
+    try:
+        # Check if user already exists
+        existing_user = firebase_auth_service.get_user_by_email(request.email)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this email already exists"
+            )
+        
+        # Create new user with complete profile
+        user = firebase_auth_service.create_user_with_profile(
+            name=request.name,
+            email=request.email,
+            password=request.password,
+            mobile=request.mobile,
+            farm_details=request.farmDetails,
+            language=request.language
+        )
+        
+        # Create access token
+        access_token = firebase_auth_service.create_custom_token(user.uid)
+        
+        return ExtendedAuthResponse(
             user=user,
             access_token=access_token,
             token_type="bearer",
@@ -174,6 +222,46 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             detail=f"Internal server error: {str(e)}"
         )
 
+@router.get("/profile", response_model=ExtendedUserResponse)
+async def get_user_profile(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """
+    Get current user profile with farm details and additional information
+    """
+    try:
+        # Extract token from Authorization header
+        token = credentials.credentials
+        
+        # Verify token
+        uid = firebase_auth_service.verify_token(token)
+        if not uid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token"
+            )
+        
+        # Get extended user profile
+        user_profile = firebase_auth_service.get_user_profile(uid)
+        if not user_profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User profile not found"
+            )
+        
+        return user_profile
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error: {str(e)}"
+        )
+
 @router.delete("/delete-account")
 async def delete_account(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
@@ -248,3 +336,5 @@ async def get_current_user_dependency(credentials: HTTPAuthorizationCredentials 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {str(e)}"
         )
+
+
