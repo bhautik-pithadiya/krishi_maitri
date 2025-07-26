@@ -17,3 +17,10 @@ def call_gemini(prompt: str) -> str:
     except Exception as e:
         print(f"Error calling Gemini API: {e}")
         return "Error: Could not get a response from the AI model."
+    
+
+if __name__ == "__main__":
+    # Example usage
+    example_prompt = "What is the weather like today in benguluru?"
+    response = call_gemini(example_prompt)
+    print(f"Response from Gemini: {response}")

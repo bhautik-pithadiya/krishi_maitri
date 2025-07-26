@@ -2,9 +2,11 @@ from app.models.disease import DiseaseRequest, DiseaseResponse
 from app.services.gemini_client import call_gemini
 from app.utils.prompt_manager import render_prompt
 from app.services.gcs_service import upload_image_to_gcs
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import json
+import re
 import os
 
 load_dotenv()
@@ -27,8 +29,25 @@ def predict_disease(request: DiseaseRequest):
         image_url=request.image_url,
         crop_type=request.crop_type
     )
-    ai_result = call_gemini(prompt)
-    ai_result = json.loads(ai_result)
-    if "disease" in ai_result and "recommendation" in ai_result:
-        return DiseaseResponse(**ai_result)
-    
+
+
+
+    # Call the AI model and parse the result
+    raw_result = call_gemini(prompt)
+    # Extract the JSON block using regex
+    print(f"Raw AI result: {raw_result}")
+    match = re.search(r"(?:json)?\s*(\{.*?\})\s*", raw_result, re.DOTALL)
+    if not match:
+        raise HTTPException(status_code=500, detail="No valid JSON block found in AI response.")
+
+    json_str = match.group(1)
+
+    print(f"Raw AI result: {json_str}")
+    try:
+        ai_result = json.loads(json_str)
+        if {"disease", "recommendation"}.issubset(ai_result):
+            return DiseaseResponse(**ai_result)
+        else:
+            raise HTTPException(status_code=422, detail="Incomplete AI response structure")
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI response is not valid JSON: {str(e)}")
