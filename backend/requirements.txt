@@ -14,3 +14,7 @@ chromadb
 beautifulsoup4
 lxml
 google-cloud-speech
+websockets
+httpx
+sounddevice
+numpy

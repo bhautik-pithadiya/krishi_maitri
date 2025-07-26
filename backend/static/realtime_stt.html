@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Speech-to-Text Transcription</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .status-indicator.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-indicator.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #28a745;
+        }
+
+        .status-dot.disconnected {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .language-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .language-selector select {
+            padding: 8px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .transcript-container {
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .transcript-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .transcript-header h2 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .clear-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .transcript {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            height: 400px;
+            overflow-y: auto;
+            background: #fafafa;
+            font-family: 'Courier New', monospace;
+            line-height: 1.8;
+            scroll-behavior: smooth;
+        }
+
+        .transcript::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .transcript::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .transcript::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .transcript::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .transcript-line {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .transcript-line.final {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+            font-weight: 500;
+        }
+
+        .transcript-line.interim {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+            font-style: italic;
+        }
+
+        .transcript-line.error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+
+        .transcript-line.system {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+            font-size: 0.9em;
+        }
+
+        .timestamp {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-right: 10px;
+            font-weight: normal;
+        }
+
+        .confidence {
+            font-size: 0.8em;
+            opacity: 0.8;
+            float: right;
+            background: rgba(255,255,255,0.7);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+            padding: 50px;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .transcript-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Live Speech-to-Text</h1>
+            <p>Real-time transcription powered by Google Cloud Speech-to-Text</p>
+        </div>
+
+        <div class="controls">
+            <div id="status" class="status-indicator disconnected">
+                <div class="status-dot disconnected"></div>
+                <span>Disconnected</span>
+            </div>
+
+            <div class="language-selector">
+                <label for="languageSelect">Language:</label>
+                <select id="languageSelect">
+                    <option value="en-US">English (US)</option>
+                    <option value="en-GB">English (UK)</option>
+                    <option value="es-ES">Spanish (Spain)</option>
+                    <option value="es-MX">Spanish (Mexico)</option>
+                    <option value="fr-FR">French</option>
+                    <option value="de-DE">German</option>
+                    <option value="it-IT">Italian</option>
+                    <option value="pt-BR">Portuguese (Brazil)</option>
+                    <option value="ru-RU">Russian</option>
+                    <option value="ja-JP">Japanese</option>
+                    <option value="ko-KR">Korean</option>
+                    <option value="zh-CN">Chinese (Simplified)</option>
+                    <option value="hi-IN">Hindi</option>
+                </select>
+            </div>
+
+            <button id="connectBtn" class="btn btn-primary">Connect</button>
+            <button id="disconnectBtn" class="btn btn-danger" disabled>Disconnect</button>
+        </div>
+
+        <div class="transcript-container">
+            <div class="transcript-header">
+                <h2>Live Transcript</h2>
+                <button id="clearBtn" class="clear-btn">Clear Transcript</button>
+            </div>
+            <div id="transcript" class="transcript">
+                <div class="empty-state">
+                    Click "Connect" to start live transcription. Speak clearly into your microphone.
+                    <br><br>
+                    Say "exit", "quit", or "stop" to end the transcription session.
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div id="totalLines" class="stat-value">0</div>
+                <div class="stat-label">Total Lines</div>
+            </div>
+            <div class="stat-item">
+                <div id="finalLines" class="stat-value">0</div>
+                <div class="stat-label">Final Results</div>
+            </div>
+            <div class="stat-item">
+                <div id="avgConfidence" class="stat-value">0%</div>
+                <div class="stat-label">Avg Confidence</div>
+            </div>
+            <div class="stat-item">
+                <div id="sessionTime" class="stat-value">0s</div>
+                <div class="stat-label">Session Time</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LiveTranscriptionClient {
+            constructor() {
+                this.ws = null;
+                this.isConnected = false;
+                this.sessionStartTime = null;
+                this.stats = {
+                    totalLines: 0,
+                    finalLines: 0,
+                    confidenceSum: 0,
+                    confidenceCount: 0
+                };
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.startSessionTimer();
+            }
+
+            initializeElements() {
+                this.elements = {
+                    status: document.getElementById('status'),
+                    statusDot: document.querySelector('.status-dot'),
+                    connectBtn: document.getElementById('connectBtn'),
+                    disconnectBtn: document.getElementById('disconnectBtn'),
+                    languageSelect: document.getElementById('languageSelect'),
+                    transcript: document.getElementById('transcript'),
+                    clearBtn: document.getElementById('clearBtn'),
+                    totalLines: document.getElementById('totalLines'),
+                    finalLines: document.getElementById('finalLines'),
+                    avgConfidence: document.getElementById('avgConfidence'),
+                    sessionTime: document.getElementById('sessionTime')
+                };
+            }
+
+            bindEvents() {
+                this.elements.connectBtn.addEventListener('click', () => this.connect());
+                this.elements.disconnectBtn.addEventListener('click', () => this.disconnect());
+                this.elements.clearBtn.addEventListener('click', () => this.clearTranscript());
+                this.elements.languageSelect.addEventListener('change', () => this.changeLanguage());
+                
+                // Handle page unload
+                window.addEventListener('beforeunload', () => {
+                    if (this.ws) {
+                        this.ws.close();
+                    }
+                });
+            }
+
+            connect() {
+                const wsUrl = `ws://${window.location.host}/api/v1/stt_live/live-transcription`;
+                
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = (event) => {
+                        this.onConnectionOpen();
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        this.handleMessage(message);
+                    };
+
+                    this.ws.onclose = (event) => {
+                        this.onConnectionClose();
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        this.displayMessage({
+                            type: 'error',
+                            message: 'WebSocket connection error'
+                        });
+                    };
+
+                } catch (error) {
+                    console.error('Failed to create WebSocket connection:', error);
+                    this.displayMessage({
+                        type: 'error',
+                        message: 'Failed to create WebSocket connection'
+                    });
+                }
+            }
+
+            disconnect() {
+                if (this.ws) {
+                    this.sendMessage({type: 'stop_transcription'});
+                    this.ws.close();
+                }
+            }
+
+            changeLanguage() {
+                if (this.isConnected) {
+                    const language = this.elements.languageSelect.value;
+                    this.sendMessage({
+                        type: 'change_language',
+                        language: language
+                    });
+                }
+            }
+
+            sendMessage(message) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                }
+            }
+
+            onConnectionOpen() {
+                this.isConnected = true;
+                this.sessionStartTime = Date.now();
+                this.updateConnectionStatus(true);
+                this.displayMessage({
+                    type: 'system',
+                    message: 'Connected to live transcription service'
+                });
+            }
+
+            onConnectionClose() {
+                this.isConnected = false;
+                this.updateConnectionStatus(false);
+                this.displayMessage({
+                    type: 'system',
+                    message: 'Disconnected from transcription service'
+                });
+            }
+
+            updateConnectionStatus(connected) {
+                const statusText = connected ? 'Connected' : 'Disconnected';
+                const statusClass = connected ? 'connected' : 'disconnected';
+                
+                this.elements.status.textContent = statusText;
+                this.elements.status.className = `status-indicator ${statusClass}`;
+                this.elements.statusDot.className = `status-dot ${statusClass}`;
+                
+                this.elements.connectBtn.disabled = connected;
+                this.elements.disconnectBtn.disabled = !connected;
+            }
+
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'connection_established':
+                        this.displayMessage({
+                            type: 'system',
+                            message: message.message
+                        });
+                        break;
+
+                    case 'transcription_result':
+                        this.displayTranscriptionResult(message.data);
+                        break;
+
+                    case 'transcription_stopped':
+                        this.displayMessage({
+                            type: 'system',
+                            message: message.message
+                        });
+                        break;
+
+                    case 'language_changed':
+                        this.displayMessage({
+                            type: 'system',
+                            message: message.message
+                        });
+                        break;
+
+                    case 'error':
+                        this.displayMessage({
+                            type: 'error',
+                            message: message.message
+                        });
+                        break;
+
+                    default:
+                        console.log('Unknown message type:', message);
+                }
+            }
+
+            displayTranscriptionResult(data) {
+                if (data.error) {
+                    this.displayMessage({
+                        type: 'error',
+                        message: data.error
+                    });
+                    return;
+                }
+
+                const transcript = data.transcript || '';
+                const isFinal = data.is_final || false;
+                const confidence = data.confidence || 0;
+                const timestamp = data.timestamp || data.system_time || Date.now();
+
+                // Update stats
+                this.updateStats(isFinal, confidence);
+
+                // Create transcript line
+                const div = document.createElement('div');
+                div.className = `transcript-line ${isFinal ? 'final' : 'interim'}`;
+                
+                const timeStr = new Date(timestamp).toLocaleTimeString();
+                const confidenceStr = (confidence * 100).toFixed(1);
+                
+                div.innerHTML = `
+                    <span class="timestamp">[${timeStr}]</span>
+                    ${transcript}
+                    ${confidence > 0 ? `<span class="confidence">${confidenceStr}%</span>` : ''}
+                `;
+
+                // Remove empty state if it exists
+                const emptyState = this.elements.transcript.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                // Handle interim vs final results
+                if (isFinal) {
+                    this.elements.transcript.appendChild(div);
+                } else {
+                    // Replace the last interim result if it exists
+                    const lastInterim = this.elements.transcript.querySelector('.transcript-line.interim:last-child');
+                    if (lastInterim) {
+                        lastInterim.replaceWith(div);
+                    } else {
+                        this.elements.transcript.appendChild(div);
+                    }
+                }
+
+                // Auto-scroll to bottom
+                this.elements.transcript.scrollTop = this.elements.transcript.scrollHeight;
+
+                // Handle exit commands
+                if (data.action === 'exit') {
+                    this.displayMessage({
+                        type: 'system',
+                        message: 'Exit command detected - stopping transcription'
+                    });
+                    this.disconnect();
+                }
+            }
+
+            displayMessage(message) {
+                const div = document.createElement('div');
+                div.className = `transcript-line ${message.type}`;
+                
+                const timeStr = new Date().toLocaleTimeString();
+                div.innerHTML = `
+                    <span class="timestamp">[${timeStr}]</span>
+                    ${message.message}
+                `;
+
+                // Remove empty state if it exists
+                const emptyState = this.elements.transcript.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                this.elements.transcript.appendChild(div);
+                this.elements.transcript.scrollTop = this.elements.transcript.scrollHeight;
+            }
+
+            updateStats(isFinal, confidence) {
+                this.stats.totalLines++;
+                
+                if (isFinal) {
+                    this.stats.finalLines++;
+                }
+
+                if (confidence > 0) {
+                    this.stats.confidenceSum += confidence;
+                    this.stats.confidenceCount++;
+                }
+
+                // Update display
+                this.elements.totalLines.textContent = this.stats.totalLines;
+                this.elements.finalLines.textContent = this.stats.finalLines;
+                
+                const avgConfidence = this.stats.confidenceCount > 0 
+                    ? (this.stats.confidenceSum / this.stats.confidenceCount * 100).toFixed(1)
+                    : 0;
+                this.elements.avgConfidence.textContent = `${avgConfidence}%`;
+            }
+
+            clearTranscript() {
+                this.elements.transcript.innerHTML = `
+                    <div class="empty-state">
+                        Transcript cleared. Continue speaking to see new results.
+                    </div>
+                `;
+                
+                // Reset stats
+                this.stats = {
+                    totalLines: 0,
+                    finalLines: 0,
+                    confidenceSum: 0,
+                    confidenceCount: 0
+                };
+                
+                this.updateStatsDisplay();
+            }
+
+            updateStatsDisplay() {
+                this.elements.totalLines.textContent = this.stats.totalLines;
+                this.elements.finalLines.textContent = this.stats.finalLines;
+                this.elements.avgConfidence.textContent = '0%';
+            }
+
+            startSessionTimer() {
+                setInterval(() => {
+                    if (this.isConnected && this.sessionStartTime) {
+                        const elapsed = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+                        this.elements.sessionTime.textContent = `${elapsed}s`;
+                    } else {
+                        this.elements.sessionTime.textContent = '0s';
+                    }
+                }, 1000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new LiveTranscriptionClient();
+        });
+    </script>
+</body>
+</html>

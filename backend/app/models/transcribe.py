@@ -9,3 +9,4 @@ class TranscribeResponse(BaseModel):
     """Response model for live transcribe endpoint"""
     transcript: str
     confidence: float
+    time_taken: float
