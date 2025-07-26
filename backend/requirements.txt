@@ -13,3 +13,6 @@ langchain-google-genai
 chromadb
 beautifulsoup4
 lxml
+firebase-admin
+PyJWT
+passlib[bcrypt]
