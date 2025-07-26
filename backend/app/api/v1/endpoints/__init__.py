@@ -5,3 +5,4 @@ from .finance_agent import router as finance_agent_router
 from .coordinator_agent import router as coordinator_agent_router
 from .tts import router as tts_router
 from .stt import router as stt_router
+from .auth import router as auth_router
