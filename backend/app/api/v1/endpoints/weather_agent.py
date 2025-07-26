@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from app.models.weather import WeatherRequest, WeatherResponse,WeatherAdviceResponse
 from app.services.reasoning_agent import generate_farming_advice_gemini
+from app.services.weather_cleaning_pipeline import clean_weather_data, summarize_for_llm
+
 import httpx
 import os
 
@@ -108,9 +110,10 @@ async def get_weather_forecast_with_advice(request: WeatherRequest, language: st
         first_forecast = data["list"][0]
         main_weather = first_forecast.get("weather", [{}])[0]
         location_name = data.get("city", {}).get("name", "Unknown Location")
-
+        cleaned_data = clean_weather_data(data["list"])
+        summary = summarize_for_llm(cleaned_data)
         # Get reasoning from Gemini
-        advice = await generate_farming_advice_gemini(data, location_name, language)
+        advice = await generate_farming_advice_gemini(summary, location_name, language)
 
         return WeatherAdviceResponse(
             location=location_name,

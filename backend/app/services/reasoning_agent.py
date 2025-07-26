@@ -20,17 +20,23 @@ async def generate_farming_advice_gemini(forecast_data: dict, location: str, lan
     Language: {language}
 
     Forecast Data:
-    {forecast_data["list"][:5]}
+    {forecast_data}
 
     Give response in the following format:
-    Summary: <summary>
-    Reasoning: <reasoning>
+    Summary : 
+    <summary>
+    Reasoning : 
+    <reasoning>
     Recommended Actions:
     - <action 1>
     - <action 2>
     - <action 3>
     Location: {location}
 
+    NOTE - keep the keys in english, but the values can be in the requested language.
+    Make sure to provide clear, actionable advice that a farmer can follow.
+    Use bullet points for actions.
+    Keep the response concise and focused on practical steps.
     """
     print(f"Prompt for Gemini:\n{prompt}\n")
     response = call_gemini(prompt)
