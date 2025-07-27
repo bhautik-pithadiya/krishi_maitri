@@ -1,2 +1,33 @@
+# Node.js
+node_modules/
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build outputs
+dist/
+build/
+
+# Environment files
 .env
-/.venv
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.vscode/
+.idea/
+
+# Misc
+*.swp
+
+# credentials
+*.json

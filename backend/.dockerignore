@@ -1,0 +1,21 @@
+# Virtual environments
+venv/
+.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor files
+.vscode/
+.idea/
+
+# Git
+.git
+.gitignore
+
+# Other build artifacts
+dist/
+build/
+**/node_modules
