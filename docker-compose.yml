@@ -1,0 +1,14 @@
+services:
+  fastapi:
+    container_name: fastapi_app
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - /home/bhautikpithadiya12/krishi-mitri/backend/.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: always
