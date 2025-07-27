@@ -27,7 +27,7 @@ def predict_disease(request: DiseaseRequest):
     prompt = render_prompt(
         name="disease_prompt",
         image_url=request.image_url,
-        crop_type=request.crop_type
+        language =request.language or "en"
     )
 
 
@@ -45,8 +45,12 @@ def predict_disease(request: DiseaseRequest):
     print(f"Raw AI result: {json_str}")
     try:
         ai_result = json.loads(json_str)
-        if {"disease", "recommendation"}.issubset(ai_result):
-            return DiseaseResponse(**ai_result)
+        if isinstance(ai_result, dict) and "disease" in ai_result:
+            # Ensure the response matches the DiseaseResponse model
+            if ai_result["recommendation"] is None:
+                return DiseaseResponse(**ai_result)
+            else:
+                return DiseaseResponse(**ai_result)
         else:
             raise HTTPException(status_code=422, detail="Incomplete AI response structure")
     except json.JSONDecodeError as e:

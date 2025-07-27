@@ -1,9 +1,11 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class DiseaseRequest(BaseModel):
     image_url: str
-    crop_type: str
+    language: Optional[str] = "en"
 
 class DiseaseResponse(BaseModel):
-    disease: str
-    recommendation: str
+    status: str
+    disease: Optional[str]
+    recommendation: Optional[str]
